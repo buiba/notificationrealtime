@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Demo Notification</title>
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <style>
+        table {
+            font-family:  Arial, Helvetica, sans-serif;
+            border-collapse:  collapse;
+            width:  100%;
+        }
+        td,
+        th {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding:  8px;
+        }
+        tr:nth-child(even) {
+            background-color: #dddddd;
+        }
+        #cpa-form {
+            background-color:red;
+        }
+    </style>
+    <script src="moment.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/5.2.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/5.2.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/5.8.0/firebase.js"></script>
+    <script>
+    // Initialize Firebase
+    var userID = "user001";
+    var config ={
+        apiKey: "AIzaSyCiDo6WZ6BmNYMmSGeI8aMdftFcj0ipv6k",
+        authDomain: "demonotification-1737c.firebaseapp.com",
+        databaseURL: "https://demonotification-1737c.firebaseio.com",
+        projectId: "demonotification-1737c",
+        storageBucket: "demonotification-1737c.appspot.com",
+        messagingSenderId: "1005441155969"
+    };
+    firebase.initializeApp(config);
+    </script>
+</head>
+<body>
+    <form class="w3-container w3-card-4" id="cpa-form">
+        <br/>
+        <input class="w3-input w3-border" id="title" type="text" placeholder="Enter Title">
+        <br/>
+        <input class="w3-input w3-border" id="message" type="text" placeholder="Enter Massage">
+        <br/>
+        <button class="w3-btn w3-blue" id="send">Send Notification</button>
+    </form>
+    <table border="1" id="tableNotification">
+        <tr>
+            <th>Title</th>
+            <th>Massage</th>
+            <th>Time</th>
+        </tr>
+    </table>
+    <script>
+        var firestore = firebase.firestore();
+        const settings = { timestampsInSnapshots: true };
+        firestore.settings(settings);
+        firestore.collection(userID).get().then(function (querySnapshot){
+            querySnapshot.forEach(function(doc){
+                var notification = doc.data();
+                addNotificationToTable(notification.title, notification.message, notification.createdTime.toDate());
+            });
+        });
+        function addNotificationToTable(title, message, time) {
+            var timeStr = moment(time).format("YYYY-MM-DD HH:mm:ss");
+            var trTag = $("<tr></tr>");
+            var titleTag = $("<td></td>").text(title);
+            var messageTag = $("<td></td>").text(message);
+            var timeTag = $("<td></td>").text(timeStr);
+            trTag.append(titleTag, messageTag, timeTag);
+            $("#tableNotification").append(trTag);
+        }
+        firestore.collection(userID).onSnapshot(function (snapshot) {
+            snapshot.docChanges().forEach(function (change) {
+                if (change.type == "added") {
+                    var notification = change.doc.data()
+                    addNotificationToTable(notification.title, notification.message, notification.createdTime.toDate());
+                }
+                if (change.type === "modified") {
+
+                }
+                if(change.type === "removed") {
+
+                }
+            });
+        });
+        $(document).ready(function () {
+            $("#send").click(function () {
+                var titleNoti = $("#title").val();
+                var messageNoti = $("#message").val();
+                $.post("http://localhost:8080/sendNotification",
+                {
+                    title: titleNoti,
+                    message: messageNoti,
+                    userID: userID
+                },
+                function(data, status){
+                    console.log("Data: " + data + "\nStatus: " + status);
+                });
+                var title = $("#title").val("");
+                var message = $("#message").val("");
+            });
+        });
+        $("#cpa-form").submit(function (e) {
+            return false;
+        });
+    </script>
+</body>
+</html>
